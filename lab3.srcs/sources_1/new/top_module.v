@@ -32,25 +32,7 @@ module top_module(
     output busy
 );
 
-wire[24:0] fn_result;
-//reg[31:0] to_display = 31'b0;
-wire[6:0] segs;
-assign seg_o = {1'b1, segs};
-
-wire[31:0] bcd_result;
-wire [26:0] to_bcd = {2'b0, fn_result};
-bin_to_bcd m_b2bcd(
-    to_bcd,
-    bcd_result
-);
-
-display_driver m_display_driver(
-    clk_i,
-    bcd_result,
-    segs,
-    seg_disabled_o
-);
-
+wire fn_busy;
 wire deb_rst, deb_start;
 debounce rst_debounce(
     clk_i,
@@ -63,7 +45,38 @@ debounce start_debounce(
     deb_start
 );
 
-wire fn_busy;
+localparam IDLE = 3'd0;
+localparam WAIT = 3'd2;
+localparam WAIT_START_BCD = 3'd3;
+localparam WAIT_BCD = 3'd4;
+
+reg[2:0] state = IDLE;
+
+
+wire[24:0] fn_result;
+//reg[31:0] to_display = 31'b0;
+wire[6:0] segs;
+assign seg_o = {1'b1, segs};
+
+wire[31:0] bcd_result;
+wire bcd_busy;
+reg bcd_start = 1'b0;
+wire [26:0] to_bcd = {2'b0, fn_result};
+bin_to_bcd_seq m_b2bcd(
+    clk_i,
+    bcd_start,
+    to_bcd,
+    bcd_result,
+    bcd_busy
+);
+
+display_driver m_display_driver(
+    clk_i,
+    bcd_result,
+    segs,
+    seg_disabled_o
+);
+
 function_module m_func(
     clk_i,
     deb_rst,
@@ -74,6 +87,27 @@ function_module m_func(
     fn_result
 );
 
-assign busy = fn_busy;
+always @(posedge clk_i) begin
+    case (state) 
+        IDLE:
+        if (fn_busy)
+            state <= WAIT;
+        WAIT:
+        if (~fn_busy) begin
+            state <= WAIT_START_BCD;
+            bcd_start <= 1'b1;
+        end 
+        WAIT_START_BCD:
+        if (bcd_busy) begin
+            state <= WAIT_BCD;
+            bcd_start <= 1'b0;
+        end
+        WAIT_BCD:
+        if (~bcd_busy)
+            state <= IDLE;
+    endcase
+end
+
+assign busy = (state != IDLE);
 
 endmodule

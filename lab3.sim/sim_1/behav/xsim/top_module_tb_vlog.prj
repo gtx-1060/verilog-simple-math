@@ -2,7 +2,7 @@
 verilog xil_defaultlib  \
 "../../../../lab3.srcs/sources_1/new/adder.v" \
 "../../../../lab3.srcs/sources_1/new/adder24.v" \
-"../../../../lab3.srcs/sources_1/new/bin_to_bcd.v" \
+"../../../../lab3.srcs/sources_1/new/bin_to_bcd_seq.v" \
 "../../../../lab3.srcs/sources_1/new/clk_divider.v" \
 "../../../../lab3.srcs/sources_1/new/debounce.v" \
 "../../../../lab3.srcs/sources_1/new/display_driver.v" \
