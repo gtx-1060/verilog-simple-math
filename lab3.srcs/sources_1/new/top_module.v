@@ -41,11 +41,13 @@ localparam FN_WAIT          = 4'd2;
 localparam BCD_WAIT_START   = 4'd3;
 localparam BCD_WAIT         = 4'd4;
 localparam BIST_WAIT_START  = 4'd5;
-localparam BIST_WAIT        = 4'd10;
-localparam BIST_END_ITER    = 4'd6;
-localparam CRC_WORD1        = 4'd7;
-localparam CRC_WORD2        = 4'd8;
-localparam CRC_WORD3        = 4'd9;
+localparam BIST_WAIT        = 4'd6;
+localparam BIST_END_ITER    = 4'd7;
+localparam CRC_WORD1        = 4'd8;
+localparam CRC_WORD2        = 4'd9;
+localparam CRC_WORD3        = 4'd10;
+localparam CRC_WORD1_E        = 4'd11;
+localparam CRC_WORD2_E        = 4'd12;
 
 reg[3:0] state = IDLE;
 
@@ -120,10 +122,12 @@ function_module m_func(
 reg start_bist = 1'b0;
 reg bist_started = 1'b0;
 reg[7:0] crc_reg = 8'b0;
+reg crc_refresh = 1'b0;
 bist m_bist(
     clk_i,
     start_bist,
     fn_busy,
+    crc_refresh,
     crc_reg, 
     
     bist_a,
@@ -157,6 +161,7 @@ always @(posedge clk_i) begin
         end
         BIST_END_ITER:
         begin
+            crc_refresh <= 1'b0;
             if (bist_mode)
                 state <= FN_WAIT_START;
             else begin
@@ -184,16 +189,29 @@ always @(posedge clk_i) begin
         CRC_WORD1:
         begin
             crc_reg <= fn_result[7:0];
+            crc_refresh <= 1'b1;
+            state <= CRC_WORD1_E;
+        end
+        CRC_WORD1_E:
+        begin
+            crc_refresh <= 1'b0;
             state <= CRC_WORD2;
         end
         CRC_WORD2:
         begin
             crc_reg <= fn_result[15:8];
-            state <= CRC_WORD3;      
+            crc_refresh <= 1'b1;
+            state <= CRC_WORD2_E;      
+        end
+        CRC_WORD2_E:
+        begin
+            crc_refresh <= 1'b0;
+            state <= CRC_WORD3;
         end
         CRC_WORD3:
         begin
             crc_reg <= fn_result[23:16];
+            crc_refresh <= 1'b1;
             state <= BIST_END_ITER;
         end
         BCD_WAIT_START:

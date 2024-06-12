@@ -24,6 +24,7 @@ module bist(
     input clk_i,
     input start_i,
     input fn_busy_i,
+    input crc_refresh,
     input wire[7:0] crc_i,
     
     output wire[7:0] lfsr_a_o,
@@ -32,6 +33,8 @@ module bist(
     output wire[7:0] crc_o,
     output bist_active_o
 );
+
+parameter ITERATIONS = 255;
 
 localparam IDLE = 3'd0;
 localparam START = 3'd1;
@@ -61,10 +64,11 @@ crc m_crc(
     clk_i,
     rst,
     crc_i,
+    crc_refresh,
     crc_o
 );
 
-reg[8:0] iterations = 9'b0;
+reg[7:0] iterations = 8'b0;
 reg[7:0] counter = 8'b0;
 assign counter_o = counter;
 
@@ -82,6 +86,7 @@ always @(posedge clk_i) begin
         begin
             rst <= 1'b0;
             state <= NEW_ITER;
+            iterations <= ITERATIONS;
         end
         NEW_ITER:
         begin 
