@@ -119,27 +119,20 @@ function_module m_func(
 
 reg start_bist = 1'b0;
 reg bist_started = 1'b0;
+reg[7:0] crc_reg = 8'b0;
 bist m_bist(
     clk_i,
     start_bist,
     fn_busy,
+    crc_reg, 
+    
     bist_a,
     bist_b,
     bist_c_o,
+    crc_o,
     bist_mode
 );
 
-reg[7:0] crc_i = 8'b0;
-//wire crc_rst = deb_bist && (~bist_mode);
-wire[7:0] crc_val;
-crc m_crc(
-    clk_i,
-    start_bist,
-    crc_i,
-    crc_val
-);
-
-reg[7:0] crc_reg = 8'b0;
 
 always @(posedge clk_i) begin
     case (state) 
@@ -152,15 +145,15 @@ always @(posedge clk_i) begin
                 state <= BCD_WAIT_START;
         BIST_WAIT_START: 
         begin
-            if (~bist_mode)
-                start_bist <= 1'b1;
-            else
-                state <= BIST_WAIT_START;
+            start_bist <= 1'b1;
+            if (bist_mode)
+                state <= BIST_WAIT;
         end
         BIST_WAIT: 
         begin
             start_bist <= 1'b0;
             bist_started <= 1'b1;
+            state <= FN_WAIT_START;
         end
         BIST_END_ITER:
         begin
@@ -170,7 +163,6 @@ always @(posedge clk_i) begin
                 if (bist_started) begin
                     state <= IDLE;
                     bist_started <= 1'b0;
-                    crc_reg <= crc_val;
                 end 
                 else begin
                     state <= BCD_WAIT_START;
@@ -191,17 +183,17 @@ always @(posedge clk_i) begin
         end
         CRC_WORD1:
         begin
-            crc_i <= fn_result[7:0];
+            crc_reg <= fn_result[7:0];
             state <= CRC_WORD2;
         end
         CRC_WORD2:
         begin
-            crc_i <= fn_result[15:8];
+            crc_reg <= fn_result[15:8];
             state <= CRC_WORD3;      
         end
         CRC_WORD3:
         begin
-            crc_i <= fn_result[23:16];
+            crc_reg <= fn_result[23:16];
             state <= BIST_END_ITER;
         end
         BCD_WAIT_START:
@@ -220,6 +212,5 @@ always @(posedge clk_i) begin
 end
 
 assign busy = (state != IDLE);
-assign crc_o = crc_reg;
 
 endmodule

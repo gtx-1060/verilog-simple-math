@@ -24,55 +24,88 @@ module bist(
     input clk_i,
     input start_i,
     input fn_busy_i,
+    input wire[7:0] crc_i,
     
     output wire[7:0] lfsr_a_o,
     output wire[7:0] lfsr_b_o,
     output wire[7:0] counter_o,
-    output bist_mode_o
+    output wire[7:0] crc_o,
+    output bist_active_o
 );
 
-reg lfsr_clk = 1'b0;
+localparam IDLE = 3'd0;
+localparam START = 3'd1;
+localparam NEW_ITER = 3'd2;
+localparam WAIT_FN = 3'd3;
+localparam END = 3'd4;
+
+reg[2:0] state = IDLE;
+assign bist_active_o = (state > START);
+
+reg clk_lfsr = 1'b0;
+reg rst = 1'b0;
+
 lfsr1 m_lfsr1(
-    lfsr_clk,
-    start_i,
+    clk_lfsr,
+    rst,
     lfsr_a_o
 );
 
 lfsr2 m_lfsr2(
-    lfsr_clk,
-    start_i,
+    clk_lfsr,
+    rst,
     lfsr_b_o
+);
+
+crc m_crc(
+    clk_i,
+    rst,
+    crc_i,
+    crc_o
 );
 
 reg[8:0] iterations = 9'b0;
 reg[7:0] counter = 8'b0;
-
-always @(posedge fn_busy_i)
-begin
-    lfsr_clk <= 1'b1;
-end
-
-always @(negedge fn_busy_i or posedge start_i)
-begin
-    if (start_i) begin
-        if (iterations == 0) begin
-            iterations <= 9'd256;
-            counter <= counter + 1;
-        end
-    end
-    else begin 
-        if (iterations > 0) begin
-            iterations <= iterations - 1;
-        end
-    end
-end
-
-always @(negedge fn_busy_i) begin
-     if (iterations > 0)
-        lfsr_clk <= 1'b0;
-end
-
-assign bist_mode_o = (iterations > 0);
 assign counter_o = counter;
+
+always @(posedge clk_i) begin
+    case(state)
+        IDLE:
+        begin
+            if (start_i) begin
+                rst <= 1'b1;
+                state <= START;
+                counter <= counter + 1;
+            end
+        end
+        START:
+        begin
+            rst <= 1'b0;
+            state <= NEW_ITER;
+        end
+        NEW_ITER:
+        begin 
+            if (fn_busy_i)
+                state <= WAIT_FN;  
+        end
+        WAIT_FN:
+        begin
+            clk_lfsr <= 1'b1; 
+            if (~fn_busy_i) begin
+                state <= END;
+                clk_lfsr <= 1'b0; 
+            end
+        end
+        END:
+        begin
+            if (iterations == 0)
+                state <= IDLE;
+            else begin
+                iterations <= iterations - 1;
+                state <= NEW_ITER;
+            end
+        end
+    endcase
+end
 
 endmodule

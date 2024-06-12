@@ -65,7 +65,7 @@ always @(posedge clk) begin
             $display("i : %d", counter);
             $display("bist : %d", bist_o);
             $display("crc : %d", crc_o);
-            if (crc_o != 8'd36 || bist_o != counter + 1) begin
+            if (crc_o != 8'd220 || bist_o != counter + 1) begin
                 $display("ERROR!");
                 $stop;
             end
