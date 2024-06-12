@@ -28,7 +28,7 @@ module function_module(
     input wire[7:0] b_i,
     
     output wire busy,
-    output reg[24:0] out
+    output reg[23:0] out
 );
 
 localparam IDLE = 3'd0;

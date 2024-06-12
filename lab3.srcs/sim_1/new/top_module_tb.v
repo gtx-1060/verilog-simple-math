@@ -37,14 +37,18 @@ wire[7:0] seg;
 wire[7:0] seg_disabled;
 wire busy;
 
+wire[7:0] crc_o, bist_o;
 top_module m_module(
     clk,
     0,
     start,
+    0,
     a,
     b,
     seg,
     seg_disabled,
+    crc_o,
+    bist_o,
     busy
 );
 

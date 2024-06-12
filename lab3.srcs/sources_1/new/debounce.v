@@ -26,10 +26,10 @@ module debounce(
     output reg sig_o = 1'b0
 );
 
-localparam K = 100;
+localparam K = 32'd100000;
 
 reg tr1 = 1'b0, tr2 = 1'b0;
-reg[7:0] counter = 8'b0;
+integer counter = 32'b0;
 
 always @(posedge clk_i) begin
     tr1 <= btn_i;
@@ -41,7 +41,7 @@ always @(posedge clk_i) begin
             sig_o <= ~sig_o;
          end
     end else begin
-        counter <= 8'b0;
+        counter <= 32'b0;
     end
 end
 

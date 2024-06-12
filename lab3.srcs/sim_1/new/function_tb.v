@@ -29,7 +29,7 @@ integer i;
 reg[7:0] as [0:5];
 reg[7:0] bs [0:5];
 reg[7:0] a, b;
-reg[24:0] results  [0:5];
+reg[23:0] results  [0:5];
 initial begin
     i = 0;
     as[1] = 8'd1;
@@ -53,7 +53,7 @@ end
 
 reg start = 1'b0;
 wire busy;
-wire[24:0] result;
+wire[23:0] result;
 function_module func(
     clk,
     1'b0,
